@@ -41,8 +41,6 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "radio/sx126x/sx126x.h"
 #include "sx126x-board.h"
 
-SPISettings spiSettings = SPISettings(2000000, MSBFIRST, SPI_MODE0);
-
 // No need to initialize DIO3 as output everytime, do it once and remember it
 bool dio3IsOutput = false;
 
@@ -53,8 +51,6 @@ void SX126xIoInit(void)
 
 	dio3IsOutput = false;
 
-	pinMode(_hwConfig.PIN_LORA_NSS, OUTPUT);
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
 	pinMode(_hwConfig.PIN_LORA_BUSY, INPUT);
 	pinMode(_hwConfig.PIN_LORA_DIO_1, INPUT);
 	pinMode(_hwConfig.PIN_LORA_RESET, OUTPUT);
@@ -86,8 +82,6 @@ void SX126xIoReInit(void)
 
 	dio3IsOutput = false;
 
-	pinMode(_hwConfig.PIN_LORA_NSS, OUTPUT);
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
 	pinMode(_hwConfig.PIN_LORA_BUSY, INPUT);
 	pinMode(_hwConfig.PIN_LORA_DIO_1, INPUT);
 	// pinMode(_hwConfig.PIN_LORA_RESET, OUTPUT);
@@ -119,7 +113,7 @@ void SX126xIoDeInit(void)
 {
 	dio3IsOutput = false;
 	detachInterrupt(_hwConfig.PIN_LORA_DIO_1);
-	pinMode(_hwConfig.PIN_LORA_NSS, INPUT);
+	shutdownSPI();
 	pinMode(_hwConfig.PIN_LORA_BUSY, INPUT);
 	pinMode(_hwConfig.PIN_LORA_DIO_1, INPUT);
 	pinMode(_hwConfig.PIN_LORA_RESET, INPUT);
@@ -156,13 +150,8 @@ void SX126xWakeup(void)
 	dio3IsOutput = false;
 	BoardDisableIrq();
 
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer(RADIO_GET_STATUS);
-	SPI_LORA.transfer(0x00);
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	const uint8_t tx_header[2] = { RADIO_GET_STATUS, 0x00 };
+	transferSPI(tx_header, sizeof(tx_header), NULL, 0, NULL, 0);
 
 	// Wait for chip to be ready.
 	SX126xWaitOnBusy();
@@ -174,18 +163,8 @@ void SX126xWriteCommand(RadioCommands_t command, uint8_t *buffer, uint16_t size)
 {
 	SX126xCheckDeviceReady();
 
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer((uint8_t)command);
-
-	for (uint16_t i = 0; i < size; i++)
-	{
-		SPI_LORA.transfer(buffer[i]);
-	}
-
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	uint8_t cmdByte = (uint8_t)command;
+	transferSPI(&cmdByte, 1, buffer, size, NULL, 0);
 
 	if (command != RADIO_SET_SLEEP)
 	{
@@ -197,38 +176,20 @@ void SX126xReadCommand(RadioCommands_t command, uint8_t *buffer, uint16_t size)
 {
 	SX126xCheckDeviceReady();
 
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer((uint8_t)command);
-	SPI_LORA.transfer(0x00);
-	for (uint16_t i = 0; i < size; i++)
-	{
-		buffer[i] = SPI_LORA.transfer(0x00);
-	}
-
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	const uint8_t tx_header[2] = { (uint8_t)command, 0x00 };
+	transferSPI(tx_header, sizeof(tx_header), NULL, 0, buffer, size);
 
 	SX126xWaitOnBusy();
 }
 
 static void SX126xWriteRegisters_rawSPI(uint16_t address, uint8_t *buffer, uint16_t size)
 {
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer(RADIO_WRITE_REGISTER);
-	SPI_LORA.transfer((address & 0xFF00) >> 8);
-	SPI_LORA.transfer(address & 0x00FF);
-
-	for (uint16_t i = 0; i < size; i++)
-	{
-		SPI_LORA.transfer(buffer[i]);
-	}
-
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	const uint8_t tx_header[3] = {
+		RADIO_WRITE_REGISTER,
+		(uint8_t)((address & 0xFF00) >> 8),
+		(uint8_t)(address & 0x00FF)
+	};
+	transferSPI(tx_header, sizeof(tx_header), buffer, size, NULL, 0);
 }
 
 void SX126xWriteRegisters(uint16_t address, uint8_t *buffer, uint16_t size)
@@ -245,19 +206,13 @@ void SX126xWriteRegister(uint16_t address, uint8_t value)
 
 static void SX126xReadRegisters_rawSPI(uint16_t address, uint8_t *buffer, uint16_t size)
 {
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer(RADIO_READ_REGISTER);
-	SPI_LORA.transfer((address & 0xFF00) >> 8);
-	SPI_LORA.transfer(address & 0x00FF);
-	SPI_LORA.transfer(0x00);
-	for (uint16_t i = 0; i < size; i++)
-	{
-		buffer[i] = SPI_LORA.transfer(0x00);
-	}
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	const uint8_t tx_header[4] = {
+		RADIO_READ_REGISTER,
+		(uint8_t)((address & 0xFF00) >> 8),
+		(uint8_t)(address & 0x00FF),
+		0x00
+	};
+	transferSPI(tx_header, sizeof(tx_header), NULL, 0, buffer, size);
 }
 
 void SX126xReadRegisters(uint16_t address, uint8_t *buffer, uint16_t size)
@@ -278,17 +233,8 @@ void SX126xWriteBuffer(uint8_t offset, uint8_t *buffer, uint8_t size)
 {
 	SX126xCheckDeviceReady();
 
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer(RADIO_WRITE_BUFFER);
-	SPI_LORA.transfer(offset);
-	for (uint16_t i = 0; i < size; i++)
-	{
-		SPI_LORA.transfer(buffer[i]);
-	}
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	const uint8_t tx_header[2] = { RADIO_WRITE_BUFFER, offset };
+	transferSPI(tx_header, sizeof(tx_header), buffer, size, NULL, 0);
 
 	SX126xWaitOnBusy();
 }
@@ -297,18 +243,8 @@ void SX126xReadBuffer(uint8_t offset, uint8_t *buffer, uint8_t size)
 {
 	SX126xCheckDeviceReady();
 
-	digitalWrite(_hwConfig.PIN_LORA_NSS, LOW);
-
-	SPI_LORA.beginTransaction(spiSettings);
-	SPI_LORA.transfer(RADIO_READ_BUFFER);
-	SPI_LORA.transfer(offset);
-	SPI_LORA.transfer(0x00);
-	for (uint16_t i = 0; i < size; i++)
-	{
-		buffer[i] = SPI_LORA.transfer(0x00);
-	}
-	SPI_LORA.endTransaction();
-	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
+	const uint8_t tx_header[3] = { RADIO_READ_BUFFER, offset, 0x00 };
+	transferSPI(tx_header, sizeof(tx_header), NULL, 0, buffer, size);
 
 	SX126xWaitOnBusy();
 }

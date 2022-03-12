@@ -13,5 +13,11 @@ void initSPI(void)
 	// SPI_LORA.setSCK(_hwConfig.PIN_LORA_SCLK);
 	// SPI_LORA.setTX(_hwConfig.PIN_LORA_MOSI);
 	SPI_LORA.begin();
+	pinMode(_hwConfig.PIN_LORA_NSS, OUTPUT);
+	digitalWrite(_hwConfig.PIN_LORA_NSS, HIGH);
 }
+
+#define LORAWAN_SPI_ACCESS_SPICLASS
+#include "boards/mcu/spi_board_spiclass.cpp"
+
 #endif

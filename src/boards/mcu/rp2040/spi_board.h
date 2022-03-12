@@ -5,5 +5,4 @@
 // extern SPIClass SPI_LORA;
 extern MbedSPI SPI_LORA;
 
-void initSPI(void);
 #endif // SPI_BOARD_H
