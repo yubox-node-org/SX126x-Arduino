@@ -4,6 +4,8 @@
 #include "boards/mcu/espressif/spi_board.h"
 #elif defined(NRF52_SERIES)
 #include "boards/mcu/nrf52832/spi_board.h"
+#elif defined(TARGET_PIGPIO)
+#include "boards/mcu/pigpio/spi_board.h"
 #else
 #include "boards/mcu/rp2040/spi_board.h"
 #endif
