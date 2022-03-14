@@ -41,4 +41,34 @@ unsigned long millis(void)
     return (unsigned long)(usec / 1000) + ((unsigned long)sec * 1000);
 }
 
+// This exists only to strip extra parameters from pigpio-style IRQ handler.
+// There is exactly one IRQ handler used by the code, so a single pointer
+// should do.
+static void (* _arduinoIrq)(void) = NULL;
+static void _arduinoIrqBridge(int, int, uint32_t) { _arduinoIrq(); }
+
+void attachInterrupt(uint8_t pin, void (* irqHandler)(void), int mode)
+{
+    unsigned edge = 0;
+    if (mode == RISING) edge = RISING_EDGE;
+    if (mode == FALLING) edge = FALLING_EDGE;
+    if (mode == CHANGE) edge = EITHER_EDGE;
+    _arduinoIrq = irqHandler;
+    int r = gpioSetISRFunc(pin, edge, -1, _arduinoIrqBridge);
+    if (r != 0) {
+        _arduinoIrq = NULL;
+        fprintf(stderr, "attachInterrupt gpioSetISRFunc() fail: %d\n", r);
+    }
+}
+
+void detachInterrupt(uint8_t pin)
+{
+    int r = gpioSetISRFunc(pin, RISING_EDGE, -1, NULL);
+    _arduinoIrq = NULL;
+    if (r != 0) {
+        fprintf(stderr, "detachInterrupt gpioSetISRFunc() fail: %d\n", r);
+    }
+}
+
+
 #endif
