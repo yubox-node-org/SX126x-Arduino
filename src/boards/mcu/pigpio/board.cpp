@@ -1,7 +1,64 @@
 #if defined TARGET_PIGPIO
 #include "boards/mcu/board.h"
 #include <pigpio.h>
+#include <pthread.h>
 
+uint32_t BoardGetRandomSeed(void)
+{
+	return random();
+}
+
+uint8_t BoardGetBatteryLevel(void)
+{
+	uint8_t batteryLevel = 0;
+
+	//TO BE IMPLEMENTED
+
+	return batteryLevel;
+}
+
+void BoardGetUniqueId(uint8_t *id)
+{
+    // Read serial from device tree and present it as board unique ID
+    const char * devtreepath = "/sys/firmware/devicetree/base/serial-number";
+    char devString[9];
+
+    /* In order for this file operation to work, there must exist a file called
+       /opt/pigpio/access, and it should contain at least one line like this:
+
+       /sys/firmware/devicetree/base/serial-number R
+     */
+
+    memset(id, 0, 8);
+    int handle = fileOpen((char *)devtreepath, PI_FILE_READ);
+    if (handle < 0) {
+        return;
+    }
+
+    // Skip over the first 8 bytes, all zeroes
+    fileSeek(handle, 8, PI_FROM_START);
+
+    fileRead(handle, devString, 8);
+    devString[8] = '\0';
+
+    fileClose(handle);
+
+    // Parse 32-bit hexadecimal string, and use it twice
+    sscanf(devString, "%02hhx%02hhx%02hhx%02hhx", id, id+1, id+2, id+3);
+    memcpy(id+4, id, 4);
+}
+
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void BoardDisableIrq(void)
+{
+    pthread_mutex_lock(&mutex);
+}
+
+void BoardEnableIrq(void)
+{
+    pthread_mutex_unlock(&mutex);
+}
 
 // Arduino API compatibility functions
 
