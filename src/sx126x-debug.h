@@ -19,6 +19,16 @@
 #endif
 
 #if LIB_DEBUG > 0
+#ifdef TARGET_PIGPIO
+#define LOG_LIB(tag, ...)                \
+	do                                   \
+	{                                    \
+		if (tag)                         \
+			fprintf(stderr, "<%s> ", tag); \
+		fprintf(stderr, __VA_ARGS__);      \
+		fprintf(stderr, "\n");             \
+	} while (0)
+#else
 #define LOG_LIB(tag, ...)                \
 	do                                   \
 	{                                    \
@@ -27,6 +37,7 @@
 		Serial.printf(__VA_ARGS__);      \
 		Serial.printf("\n");             \
 	} while (0)
+#endif
 #else
 #define LOG_LIB(...)
 #endif
