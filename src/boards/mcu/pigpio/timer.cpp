@@ -6,6 +6,7 @@
 
 static bool timerInUse[10] = {false, false, false, false, false, false, false, false, false, false};
 static bool timerTerminate[10] = {false, false, false, false, false, false, false, false, false, false};
+static bool timerSelfStart[10] = {false, false, false, false, false, false, false, false, false, false};
 static pthread_t timerThread[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // External functions
@@ -42,7 +43,9 @@ static void timerCallback(TimerEvent_t * obj)
 
 	// NOTE: if one-shot, this will TERMINATE this execution thread. Also if
 	// the timer was stopped and not restarted by its own callback.
-	if (obj->oneShot || timerTerminate[idx]) gpioSetTimerFunc(idx, 0, NULL);
+	bool selfStart = timerSelfStart[idx];
+	timerSelfStart[idx] = false;
+	if ((obj->oneShot || timerTerminate[idx]) && !selfStart) gpioSetTimerFunc(idx, 0, NULL);
 }
 
 void TimerStart(TimerEvent_t *obj)
@@ -52,6 +55,11 @@ void TimerStart(TimerEvent_t *obj)
 	int r = gpioSetTimerFuncEx(idx, obj->ReloadValue, (gpioTimerFuncEx_t)&timerCallback, obj);
 	if (r != 0) {
 		fprintf(stderr, "TimerStart: gpioSetTimerFuncEx() fail: %d\n", r);
+	}
+	if (obj->oneShot && pthread_equal(pthread_self(), timerThread[idx])) {
+		// TimerStart called from inside callback. Even if timer is one-shot,
+		// callback should be run at least once again.
+		timerSelfStart[idx] = true;
 	}
 }
 
@@ -64,6 +72,7 @@ void TimerStop(TimerEvent_t *obj)
 	} else {
 		gpioSetTimerFunc(idx, 0, NULL);
 	}
+	timerSelfStart[idx] = false;
 }
 
 void TimerReset(TimerEvent_t *obj)
@@ -77,6 +86,11 @@ void TimerReset(TimerEvent_t *obj)
 	int r = gpioSetTimerFuncEx(idx, obj->ReloadValue, (gpioTimerFuncEx_t)&timerCallback, obj);
 	if (r != 0) {
 		fprintf(stderr, "TimerReset: gpioSetTimerFuncEx() fail: %d\n", r);
+	}
+	if (obj->oneShot && pthread_equal(pthread_self(), timerThread[idx])) {
+		// TimerReset called from inside callback. Even if timer is one-shot,
+		// callback should be run at least once again.
+		timerSelfStart[idx] = true;
 	}
 }
 
