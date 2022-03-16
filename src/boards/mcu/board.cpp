@@ -83,7 +83,7 @@ uint32_t lora_hardware_init(hw_config hwConfig)
 
 	if ((readSyncWord == 0x2414) || (readSyncWord == 0x4434))
 	{
-#if defined NRF52_SERIES || defined ESP32
+#if defined NRF52_SERIES || defined ESP32 || defined TARGET_PIGPIO
 		if (start_lora_task())
 		{
 			return 0;
@@ -129,7 +129,7 @@ uint32_t lora_hardware_re_init(hw_config hwConfig)
 
 	if ((readSyncWord == 0x2414) || (readSyncWord == 0x4434))
 	{
-#if defined NRF52_SERIES || defined ESP32 || ARDUINO_ARCH_RP2040
+#if defined NRF52_SERIES || defined ESP32 || ARDUINO_ARCH_RP2040 || defined TARGET_PIGPIO
 		if (start_lora_task())
 		{
 			return 0;
@@ -423,11 +423,33 @@ bool start_lora_task(void)
 }
 #endif
 
+#ifdef TARGET_PIGPIO
+
+static void _lora_task(int, uint32_t)
+{
+	Radio.BgIrqProcess();
+}
+
+bool start_lora_task(void)
+{
+	int r = eventSetFunc(DIOIRQ_EVENT, _lora_task);
+	if (r != 0) {
+		fprintf(stderr, "failed to enable DIOIRQ_EVENT!\n");
+		return false;
+	}
+	return true;
+}
+
+#endif
+
 void lora_hardware_uninit(void)
 {
 #if defined NRF52_SERIES || defined ESP32
 	vTaskSuspend(_loraTaskHandle);
 
+#endif
+#if defined TARGET_PIGPIO
+	eventSetFunc(DIOIRQ_EVENT, NULL);
 #endif
 	SX126xIoDeInit();
 }

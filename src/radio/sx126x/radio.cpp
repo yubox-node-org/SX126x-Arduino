@@ -1262,6 +1262,9 @@ void RadioOnDioIrq(void)
 		osSignalSet(_lora_task_thread, 0x1);
 	}
 #endif
+#ifdef TARGET_PIGPIO
+	eventTrigger(DIOIRQ_EVENT);
+#endif
 }
 
 void RadioBgIrqProcess(void)

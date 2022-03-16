@@ -83,6 +83,13 @@ struct hw_config
 extern osThreadId _lora_task_thread;
 #endif
 
+#ifdef TARGET_PIGPIO
+#include <pigpio.h>
+// Choose one unique event in range 0..30 (31 is reserved).
+#define DIOIRQ_EVENT 0
+
+#endif
+
 extern hw_config _hwConfig;
 
 /**@brief Initializes the target board peripherals.
