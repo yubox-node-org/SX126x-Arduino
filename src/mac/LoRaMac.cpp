@@ -415,6 +415,12 @@ static uint8_t RxSlot = 0;
 LoRaMacFlags_t LoRaMacFlags;
 
 /*!
+ * Number of real-time milliseconds that actually elapse when 1000
+ * milliseconds elapse according to the MCU clock.
+ */
+uint16_t LoRaMacMsecSkew = 1000;
+
+/*!
  * \brief Function to be executed on Radio Tx Done event
  */
 static void OnRadioTxDone(void);
@@ -2014,6 +2020,12 @@ static LoRaMacStatus_t ScheduleTx(void)
 		}
 		RxWindow1Delay = LoRaMacParams.ReceiveDelay1 + RxWindow1Config.WindowOffset;
 		RxWindow2Delay = LoRaMacParams.ReceiveDelay2 + RxWindow2Config.WindowOffset;
+	}
+
+	if (LoRaMacMsecSkew != 1000)
+	{
+		RxWindow1Delay = (uint32_t)(RxWindow1Delay * 1000.0 / LoRaMacMsecSkew);
+		RxWindow2Delay = (uint32_t)(RxWindow2Delay * 1000.0 / LoRaMacMsecSkew);
 	}
 
 	/*******************************************/

@@ -55,6 +55,14 @@ extern uint8_t max_ack_retries;
 extern uint32_t LoRaMacState;
 
 /*!
+ * Number of real-time milliseconds that actually passed when 1000 milliseconds
+ * have elapsed according to the MCU clock. This value should be increased
+ * beyond 1000 (the default) in order to work around significant clock skews
+ * that prevent the MAC layer from opening the RX window on time.
+ */
+extern uint16_t LoRaMacMsecSkew;
+
+/*!
  * Frame direction definition for up-link communications
  */
 #define UP_LINK 0
