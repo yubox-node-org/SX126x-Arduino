@@ -92,7 +92,7 @@ void SX126xInit(DioIrqHandler dioIrq)
 	{
 		CalibrationParams_t calibParam;
 
-		SX126xSetDio3AsTcxoCtrl(TCXO_CTRL_3_3V, RADIO_TCXO_SETUP_TIME << 6);
+		SX126xSetDio3AsTcxoCtrl(_hwConfig.TCXO_CTRL_VOLTAGE, RADIO_TCXO_SETUP_TIME << 6);
 		calibParam.Value = 0x7F;
 		SX126xCalibrate(calibParam);
 	}
@@ -269,6 +269,8 @@ void SX126xSetRx(uint32_t timeout)
 	uint8_t buf[3];
 
 	SX126xSetOperatingMode(MODE_RX);
+
+    SX126xWriteRegister( REG_RX_GAIN, 0x94 ); // default gain
 
 	buf[0] = (uint8_t)((timeout >> 16) & 0xFF);
 	buf[1] = (uint8_t)((timeout >> 8) & 0xFF);
