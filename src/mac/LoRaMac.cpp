@@ -1407,10 +1407,13 @@ static void OnMacStateCheckTimerEvent(void)
 	{
 		LOG_LIB("LM", "LoRaMacState = idle");
 		lmh_mac_is_busy = false;
-		if (LoRaMacFlags.Bits.McpsReq == 1)
+
+		LoRaMacFlags_t lmFlags = LoRaMacFlags;
+		LoRaMacFlags.Bits.McpsReq = 0;
+
+		if (lmFlags.Bits.McpsReq == 1)
 		{
 			LoRaMacPrimitives->MacMcpsConfirm(&McpsConfirm);
-			LoRaMacFlags.Bits.McpsReq = 0;
 		}
 
 		if (LoRaMacFlags.Bits.MlmeReq == 1)
