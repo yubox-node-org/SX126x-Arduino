@@ -1233,6 +1233,8 @@ static void OnRadioRxTimeout(void)
 			LoRaMacFlags.Bits.MacDone = 1;
 		}
 	}
+	TimerSetValue(&MacStateCheckTimer, MAC_STATE_CHECK_TIMEOUT);
+	TimerStart(&MacStateCheckTimer);
 }
 
 static void OnMacStateCheckTimerEvent(void)
@@ -1243,6 +1245,7 @@ static void OnMacStateCheckTimerEvent(void)
 
 	TimerStop(&MacStateCheckTimer);
 
+	LOG_LIB("LM", "OnMacStateCheckTimerEvent");
 	if (LoRaMacFlags.Bits.MacDone == 1)
 	{
 		if ((LoRaMacState & LORAMAC_RX_ABORT) == LORAMAC_RX_ABORT)
@@ -1420,7 +1423,8 @@ static void OnMacStateCheckTimerEvent(void)
 		{
 			LoRaMacPrimitives->MacMlmeConfirm(&MlmeConfirm);
 			if (MlmeConfirm.MlmeRequest == MLME_JOIN && IsLoRaMacNetworkJoined != JOIN_OK)
-			{ // fix the bug: When the number of join times is used up, if call lmh_join() in callback function again cannot work
+			{
+				// fix the bug: When the number of join times is used up, if call lmh_join() in callback function again cannot work
 				LoRaMacFlags.Bits.MlmeReq = 1;
 			}
 			else
@@ -1470,8 +1474,6 @@ static void OnTxDelayedTimerEvent(void)
 
 	if ((LoRaMacFlags.Bits.MlmeReq == 1) && (MlmeConfirm.MlmeRequest == MLME_JOIN))
 	{
-		ResetMacParameters();
-
 		altDr.NbTrials = JoinRequestTrials + 1;
 		LoRaMacParams.ChannelsDatarate = RegionAlternateDr(LoRaMacRegion, &altDr);
 
@@ -1567,11 +1569,14 @@ static void OnAckTimeoutTimerEvent(void)
 	{
 		AckTimeoutRetry = true;
 		LoRaMacState &= ~LORAMAC_ACK_REQ;
+		LoRaMacState &= ~LORAMAC_TX_RUNNING;
 	}
 	if (LoRaMacDeviceClass == CLASS_C)
 	{
 		LoRaMacFlags.Bits.MacDone = 1;
 	}
+	TimerStop(&MacStateCheckTimer);
+	OnMacStateCheckTimerEvent();
 }
 
 static void RxWindowSetup(bool rxContinuous, uint32_t maxRxWindow)
@@ -2269,7 +2274,7 @@ LoRaMacStatus_t PrepareFrame(LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl,
 			fCtrl->Bits.Ack = 1;
 		}
 
-		LoRaMacBuffer[pktHeaderLen++] = (LoRaMacDevAddr)&0xFF;
+		LoRaMacBuffer[pktHeaderLen++] = (LoRaMacDevAddr) & 0xFF;
 		LoRaMacBuffer[pktHeaderLen++] = (LoRaMacDevAddr >> 8) & 0xFF;
 		LoRaMacBuffer[pktHeaderLen++] = (LoRaMacDevAddr >> 16) & 0xFF;
 		LoRaMacBuffer[pktHeaderLen++] = (LoRaMacDevAddr >> 24) & 0xFF;

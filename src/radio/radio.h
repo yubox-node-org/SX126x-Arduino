@@ -23,6 +23,13 @@
 #ifndef __RADIO_H__
 #define __RADIO_H__
 
+#if defined ARDUINO_RAKWIRELESS_RAK11300
+#include <FreeRTOS.h>
+#include <semphr.h>
+#include <task.h>
+#define TASK_PRIO_NORMAL 1
+#endif
+
 /*!
  * Radio driver supported modems
  */
