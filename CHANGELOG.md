@@ -4,6 +4,13 @@ Arduino library for LoRa communication with Semtech SX126x chips. It is based on
 
 # Release Notes
 
+# V2.0.29 Add read the Syncword function
+  - Add radio function to read the radio syncword uint16_t syncword = Radio.GetSyncWord(void);
+  
+# V2.0.28 Add custom Syncword and Low DataRate optimization
+  - Add radio function to set a custom Syncword Radio.SetCustomSyncWord(uint16_t syncword);
+  - Add radio function to enforce Low DataRate optimization Radio.EnforceLowDRopt(bool enforce);
+  
 # V2.0.27 Access to NWsKey and AppsKey
   - Add functions to get network session key and app session key after join
   

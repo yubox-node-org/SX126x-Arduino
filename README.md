@@ -88,6 +88,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----
 ## Changelog
 [Code releases](CHANGELOG.md)
+- 2025-01-05 Add function to read the Syncword
+  - Add radio function to read the radio syncword uint16_t syncword = Radio.GetSyncWord(void);
+- 2025-01-01 Add custom Syncword and Low DataRate optimization
+  - Add radio function to set a custom Syncword Radio.SetCustomSyncWord(uint16_t syncword);
+  - Add radio function to enforce Low DataRate optimization Radio.EnforceLowDRopt(bool enforce);
 - 2024-10-17 Access to NWsKey and AppsKey
   - Add functions to get network session key and app session key after join
 - 2024-07-02 Add missing header file
