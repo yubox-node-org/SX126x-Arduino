@@ -1,6 +1,6 @@
 {
 	"name": "SX126x-Arduino",
-	"version": "2.0.29",
+	"version": "2.0.30",
 	"keywords": [
 		"lora",
 		"Semtech",
@@ -21,7 +21,6 @@
 		"espressif32",
 		"nordicnrf52",
 		"espressif8266",
-		"nordicnrf52",
 		"mbed_rp2040",
 		"rp2040"
 	],
