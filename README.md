@@ -88,6 +88,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----
 ## Changelog
 [Code releases](CHANGELOG.md)
+- 2025-06-06 Fix RAK3112
+  - Correct LoRa pin assignment for RAK3112
 - 2025-01-16 Fix RP2040 assert issue
   - Set timer priority correct, thanks to _**@EdisonAgudelo**_
   - Add RAK3112 support
