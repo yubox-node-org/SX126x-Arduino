@@ -4,6 +4,9 @@ Arduino library for LoRa communication with Semtech SX126x chips. It is based on
 
 # Release Notes
 
+# V2.0.31 Fix RAK3112
+  - Correct LoRa pin assignment for RAK3112
+  
 # V2.0.30 Fix RP2040 assert issue
   - Set timer priority correct, thanks to _**@EdisonAgudelo**_
   - Add RAK3112 support
